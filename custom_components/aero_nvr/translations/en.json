@@ -1,0 +1,37 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to Aero NVR",
+        "description": "Generate a token in Aero under Settings → Add-ons → Home Assistant, then paste it here.",
+        "data": {
+          "host": "Address",
+          "token": "Token",
+          "verify_ssl": "Verify the SSL certificate"
+        },
+        "data_description": {
+          "host": "For example 192.168.1.50:2525, or a full https:// URL.",
+          "token": "Shown once when you generate it in Aero."
+        }
+      },
+      "reauth_confirm": {
+        "title": "Reconnect to Aero NVR",
+        "description": "Aero rejected the saved token. Generate a new one under Settings → Add-ons → Home Assistant.",
+        "data": {
+          "token": "Token"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Could not reach Aero at that address.",
+      "invalid_auth": "Aero rejected that token.",
+      "addon_missing": "The Home Assistant add-on is not installed in Aero. Add it under Settings → Add-ons.",
+      "unsupported_version": "This Aero server speaks a different integration API version. Update Aero or this integration so the two match.",
+      "wrong_server": "That token belongs to a different Aero server."
+    },
+    "abort": {
+      "already_configured": "This Aero server is already set up.",
+      "reauth_successful": "Reconnected to Aero."
+    }
+  }
+}
