@@ -91,6 +91,16 @@ class AeroClient:
             _LOGGER.debug("No snapshot for camera %s: %s", camera_id, err)
             return None
 
+    async def compat_stream(self, camera_id: int | str, role: str = "main") -> dict[str, Any]:
+        """Ask Aero to register the H.264 fallback for a camera it can't decode.
+
+        Idempotent on Aero's side -- go2rtc keeps the definition once made and
+        only runs ffmpeg while something is connected to it -- so this is safe
+        to call every time a stream is about to start rather than only once.
+        """
+        return await self._request(
+            "POST", f"/cameras/{camera_id}/compat-stream", params={"role": role})
+
     def event_image_url(self, event_id: int) -> str:
         return str(self.url(f"/events/{event_id}/image"))
 

@@ -9,6 +9,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import AeroConfigEntry
+from .api import AeroError
 from .const import GO2RTC_RTSP_PORT
 from .entity import AeroCameraEntity
 
@@ -49,10 +50,30 @@ class AeroCamera(AeroCameraEntity, Camera):
     def _stream_name(self) -> str | None:
         return (self.camera.get("streams") or {}).get(self._role)
 
+    @property
+    def _needs_transcode(self) -> bool:
+        return bool((self.camera.get("needs_transcode") or {}).get(self._role))
+
     async def stream_source(self) -> str | None:
         name = self._stream_name
         if not name:
             return None
+        if self._needs_transcode:
+            # This camera's codec (H.265, almost always) is one Home
+            # Assistant's own stream component can't decode any more than a
+            # browser can -- it would otherwise connect and show nothing, the
+            # same silent failure Aero's own web UI had before it grew this
+            # same fallback. Ask Aero for its on-demand H.264 transcode and
+            # dial that name instead. Best-effort: if Aero can't be reached
+            # right now, falling through to the native name is no worse than
+            # not trying, and the next stream attempt tries again.
+            try:
+                result = await self.coordinator.client.compat_stream(
+                    self._camera_id, self._role)
+                name = result.get("src") or name
+            except AeroError as err:
+                _LOGGER.debug("Compatibility stream unavailable for camera %s: %s",
+                              self._camera_id, err)
         # The host comes from the config entry, which is the address Home
         # Assistant proved it can reach during setup -- not from anything the
         # NVR reports about itself, which is wrong behind a reverse proxy.
