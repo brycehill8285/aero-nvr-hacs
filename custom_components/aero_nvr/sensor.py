@@ -23,6 +23,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: AeroConfigEntry,
             entities.append(AeroObjectCount(coordinator, camera_id, label))
         entities.append(AeroLastEvent(coordinator, camera_id))
         entities.append(AeroLastEventTime(coordinator, camera_id))
+        entities.append(AeroLastRecognizedFace(coordinator, camera_id))
+        entities.append(AeroLastPlateRead(coordinator, camera_id))
         entities.append(AeroDecoder(coordinator, camera_id))
     async_add_entities(entities)
 
@@ -86,6 +88,77 @@ class AeroLastEventTime(AeroCameraEntity, SensorEntity):
         if not event or not event.get("started"):
             return None
         return datetime.fromtimestamp(event["started"], tz=timezone.utc)
+
+
+class AeroLastRecognizedFace(AeroCameraEntity, SensorEntity):
+    """Who Aero last put a name to on this camera.
+
+    Independent of "Last event": the most recent event can be a stranger or
+    a car, which would otherwise bury the last time someone was actually
+    identified. Unavailable when face recognition is switched off for this
+    camera, same as the presence sensors.
+    """
+
+    _attr_name = "Last recognized person"
+    _attr_icon = "mdi:account-check"
+
+    def __init__(self, coordinator, camera_id):
+        super().__init__(coordinator, camera_id, "last_recognized_face")
+
+    @property
+    def _face(self) -> dict:
+        return self.state_data.get("last_recognized_face") or {}
+
+    @property
+    def native_value(self) -> str | None:
+        return self._face.get("name")
+
+    @property
+    def available(self) -> bool:
+        if not super().available:
+            return False
+        return bool(self.camera.get("detection", {}).get("faces"))
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        face = self._face
+        return {"event_id": face.get("event_id"), "at": face.get("at"),
+                "has_image": face.get("has_image")}
+
+
+class AeroLastPlateRead(AeroCameraEntity, SensorEntity):
+    """The most recent licence plate Aero read on this camera.
+
+    Independent of "Last event" the same way as the recognized-person sensor
+    above: the most recent event can easily be a car with no legible plate.
+    Unavailable when plate reading is switched off for this camera.
+    """
+
+    _attr_name = "Last plate read"
+    _attr_icon = "mdi:car-search"
+
+    def __init__(self, coordinator, camera_id):
+        super().__init__(coordinator, camera_id, "last_plate_read")
+
+    @property
+    def _plate(self) -> dict:
+        return self.state_data.get("last_plate_read") or {}
+
+    @property
+    def native_value(self) -> str | None:
+        return self._plate.get("plate")
+
+    @property
+    def available(self) -> bool:
+        if not super().available:
+            return False
+        return bool(self.camera.get("detection", {}).get("plates"))
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        plate = self._plate
+        return {"event_id": plate.get("event_id"), "confidence": plate.get("confidence"),
+                "at": plate.get("at"), "has_image": plate.get("has_image")}
 
 
 class AeroDecoder(AeroCameraEntity, SensorEntity):

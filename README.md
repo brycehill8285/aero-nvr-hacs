@@ -28,6 +28,9 @@ Removing the add-on in Aero revokes every token and closes the API.
 | Person / Car / Animal count | How many are on camera now |
 | Last event / Last event time | What Aero last recorded |
 | Last event image | The saved crop, pinned to its event id |
+| Last recognized person | Who Aero last put a name to -- independent of Last event, which can be a stranger or a car |
+| Last plate read | The most recent licence plate read -- independent of Last event the same way |
+| Last recognized person image / Last plate read image | The photo behind each of the above, pinned to its event id (disabled by default) |
 | Problem | On when the camera's analysis worker has stalled (disabled by default) |
 | Decoder | Which decoder the stream got (diagnostic, disabled by default) |
 | Switches | Recording, detect people/vehicles/animals/faces/plates, event search indexing |
