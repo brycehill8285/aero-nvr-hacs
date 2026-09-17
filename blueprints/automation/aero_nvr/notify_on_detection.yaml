@@ -1,0 +1,64 @@
+blueprint:
+  name: Aero NVR - Notify on detection
+  description: >
+    Send a mobile notification with a snapshot whenever Aero NVR detects a
+    person, vehicle or animal. Pick which "detected" sensors to watch and
+    which phone to notify -- the snapshot comes from that camera's own
+    "Last event image" entity, so it always matches what triggered the alert.
+  domain: automation
+  source_url: https://github.com/brycehill8285/aero-nvr-hacs/blob/main/blueprints/automation/aero_nvr/notify_on_detection.yaml
+  homeassistant:
+    min_version: "2024.12.0"
+  input:
+    detection_entities:
+      name: Sensors to watch
+      description: >
+        The "Person detected" / "Vehicle detected" / "Animal detected" binary
+        sensors to notify on. Do not pick the plain "Motion" sensor here --
+        it fires far more often than most people want a phone notification
+        for.
+      selector:
+        entity:
+          multiple: true
+          filter:
+            - integration: aero_nvr
+              domain: binary_sensor
+    notify_device:
+      name: Phone to notify
+      description: The mobile device running the Home Assistant Companion app.
+      selector:
+        device:
+          filter:
+            - integration: mobile_app
+
+variables:
+  notify_device: !input notify_device
+
+trigger:
+  - trigger: state
+    entity_id: !input detection_entities
+    to: "on"
+
+condition: []
+
+action:
+  - variables:
+      camera_device_id: "{{ device_id(trigger.entity_id) }}"
+      # Each camera is its own device with both the binary sensors and the
+      # "Last event image" entity on it (see entity.py), so this always
+      # resolves to the image for the camera that actually triggered --
+      # never a different camera's picture.
+      image_entity: >-
+        {{ device_entities(camera_device_id)
+           | select('match', '^image\\.')
+           | list | first | default('', true) }}
+  - service: >-
+      notify.mobile_app_{{ device_attr(notify_device, 'name') | slugify }}
+    data:
+      title: "{{ trigger.to_state.name }}"
+      message: "{{ now().strftime('%-I:%M %p') }}"
+      data: >-
+        {{ {'image': 'entity_id:' ~ image_entity} if image_entity else {} }}
+
+mode: parallel
+max: 10

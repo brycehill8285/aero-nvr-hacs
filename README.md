@@ -34,6 +34,23 @@ Removing the add-on in Aero revokes every token and closes the API.
 
 Toggling a detection switch does not interrupt recording.
 
+## Notifications
+
+A blueprint ships in this repo for phone alerts with a snapshot attached, built on
+the entities above (no extra setup on Aero's side):
+
+1. In Home Assistant, go to **Settings → Automations & Scenes → Blueprints → Import
+   Blueprint**.
+2. Paste this URL:
+   `https://raw.githubusercontent.com/brycehill8285/aero-nvr-hacs/main/blueprints/automation/aero_nvr/notify_on_detection.yaml`
+3. Create an automation from it, pick the "Person/Vehicle/Animal detected" sensors to
+   watch (not the plain "Motion" sensor -- that fires far more often) and which phone
+   to notify.
+
+The notification's picture comes from that camera's "Last event image" entity, so it
+always matches whatever triggered the alert rather than a live frame taken after the
+fact.
+
 ## Requirements
 
 - Aero NVR with the Home Assistant add-on installed
