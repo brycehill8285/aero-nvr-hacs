@@ -34,6 +34,13 @@ Removing the add-on in Aero revokes every token and closes the API.
 
 Toggling a detection switch does not interrupt recording.
 
+## Media Browser
+
+Recorded footage is browsable from Home Assistant's **Media** panel: Aero NVR -> a
+camera -> a day -> a clip. Playback is proxied through Home Assistant itself (the
+frontend has no session cookie for Aero and can't attach the integration's token to a
+plain video fetch), so nothing extra needs opening up on your network for it to work.
+
 ## Notifications
 
 A blueprint ships in this repo for phone alerts with a snapshot attached, built on

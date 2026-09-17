@@ -91,6 +91,37 @@ class AeroClient:
             _LOGGER.debug("No snapshot for camera %s: %s", camera_id, err)
             return None
 
+    async def recordings(self, camera_id: int | str, start: float | None = None,
+                         end: float | None = None) -> list[dict[str, Any]]:
+        params = {k: v for k, v in (("start", start), ("end", end)) if v is not None}
+        result = await self._request("GET", f"/cameras/{camera_id}/recordings", params=params)
+        return result.get("recordings", [])
+
+    async def raw_get(self, path: str, params: dict[str, Any] | None = None
+                      ) -> tuple[bytes, str]:
+        """A response's raw bytes and content type, unparsed.
+
+        Only the media proxy view needs this: _request decides json-or-bytes
+        from the response's own content type and throws the type away either
+        way, but a browser fetching an HLS playlist or an mp4 segment through
+        that proxy needs the real content type forwarded, not assumed.
+        """
+        url = self.url(path)
+        try:
+            async with self._session.get(
+                url, headers=self.headers, params=params, ssl=self._verify_ssl,
+                timeout=aiohttp.ClientTimeout(total=30)
+            ) as response:
+                if response.status in (401, 403):
+                    raise AeroAuthError("Aero rejected the token.")
+                if response.status == 404:
+                    raise AeroError("Not found")
+                if response.status >= 400:
+                    raise AeroError(f"GET {path} returned {response.status}")
+                return await response.read(), response.content_type
+        except aiohttp.ClientError as err:
+            raise AeroError(f"Could not reach Aero at {url}: {err}") from err
+
     async def compat_stream(self, camera_id: int | str, role: str = "main") -> dict[str, Any]:
         """Ask Aero to register the H.264 fallback for a camera it can't decode.
 

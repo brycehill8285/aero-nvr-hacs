@@ -14,6 +14,7 @@ from homeassistant.helpers.device_registry import DeviceEntryType
 from .api import AeroAuthError, AeroClient, AeroError
 from .const import CONF_SERVER_ID, CONF_VERIFY_SSL, DOMAIN
 from .coordinator import AeroCoordinator
+from .media_proxy import AeroMediaProxyView
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -59,6 +60,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: AeroConfigEntry) -> bool
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(_async_reload))
+
+    # One view serves every config entry (it takes entry_id in the URL), so it
+    # is only ever registered once even with more than one Aero server added.
+    if DOMAIN not in hass.data:
+        hass.data[DOMAIN] = {}
+    if not hass.data[DOMAIN].get("media_proxy_registered"):
+        hass.http.register_view(AeroMediaProxyView(hass))
+        hass.data[DOMAIN]["media_proxy_registered"] = True
+
     return True
 
 
